@@ -1,0 +1,18 @@
+[
+  {
+    "id": "user_1",
+    "name": "Alice Johnson",
+    "department": "Engineering",
+    "email": "alice@company.com",
+    "clearanceLevel": "Level 3",
+    "fingerprint": "Rk1SAEB0RUBgZElSQ0xBACAyMAAAAAAcAAABAAEAAfQB9AEAAQAyAA=="
+  },
+  {
+    "id": "user_2", 
+    "name": "Bob Smith",
+    "department": "Security",
+    "email": "bob@company.com",
+    "clearanceLevel": "Level 4",
+    "fingerprint": "Rk1SAEB0RUBgZElSQ0xBACAyMAAAAAAcAAABAAEAAfQB9AEAAQAyAB=="
+  }
+]

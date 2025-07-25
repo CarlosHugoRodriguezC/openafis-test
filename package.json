@@ -1,0 +1,55 @@
+{
+  "name": "fingerprint-matcher",
+  "version": "1.0.0",
+  "description": "Node.js package for ISO fingerprint matching using OpenAFIS library",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "install": "node-gyp rebuild",
+    "test": "node test.js",
+    "test:new": "node test-new-api.js",
+    "test:ts": "npx ts-node test-typescript.ts",
+    "examples": "node examples.js",
+    "examples:ts": "npx ts-node typescript-example.ts",
+    "build": "node-gyp rebuild",
+    "type-check": "npx tsc --noEmit"
+  },
+  "dependencies": {
+    "node-addon-api": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.9",
+    "node-gyp": "^10.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
+  "keywords": [
+    "fingerprint",
+    "biometric",
+    "matching",
+    "iso",
+    "openafis",
+    "authentication",
+    "identification",
+    "typescript"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "gypfile": true,
+  "repository": {
+    "type": "git",
+    "url": "your-repository-url"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "files": [
+    "build/Release/openafis_addon.node",
+    "index.js",
+    "index.d.ts",
+    "binding.gyp",
+    "src/",
+    "README.md",
+    "package.json"
+  ]
+}
