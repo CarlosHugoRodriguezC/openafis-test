@@ -1,5 +1,5 @@
 {
-  "name": "fingerprint-matcher",
+  "name": "openafis-test",
   "version": "1.0.0",
   "description": "Node.js package for ISO fingerprint matching using OpenAFIS library",
   "main": "index.js",
