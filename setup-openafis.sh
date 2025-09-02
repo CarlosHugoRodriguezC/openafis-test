@@ -123,7 +123,7 @@ get_cpu_cores() {
     fi
 }
 
-# Function to clone OpenAFIS repository or create mock implementation
+# Function to clone OpenAFIS repository
 clone_openafis() {
     local install_dir=$1
     
@@ -141,270 +141,15 @@ clone_openafis() {
         fi
     fi
     
-    # Try to clone the official repository first
-    print_status "Attempting to clone OpenAFIS repository..."
-    if git clone https://github.com/neilharan/openafis.git "$install_dir" 2>/dev/null; then
+    # Clone the official repository
+    print_status "Cloning OpenAFIS repository..."
+    if git clone https://github.com/neilharan/openafis.git "$install_dir"; then
         print_success "OpenAFIS repository cloned successfully"
         return 0
+    else
+        print_error "Failed to clone OpenAFIS repository"
+        exit 1
     fi
-    
-    # If cloning fails, create a mock implementation
-    print_warning "Official OpenAFIS repository not found or not accessible"
-    print_status "Creating mock OpenAFIS implementation for development..."
-    
-    mkdir -p "$install_dir"
-    create_mock_openafis "$install_dir"
-    
-    print_success "Mock OpenAFIS implementation created successfully"
-}
-
-# Function to create a mock OpenAFIS implementation
-create_mock_openafis() {
-    local source_dir=$1
-    
-    print_status "Creating mock OpenAFIS structure..."
-    
-    # Create directory structure
-    mkdir -p "$source_dir/src"
-    mkdir -p "$source_dir/include"
-    
-    # Create CMakeLists.txt
-    cat > "$source_dir/CMakeLists.txt" << 'EOF'
-cmake_minimum_required(VERSION 3.16)
-project(OpenAFIS VERSION 1.0.0)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Include directories
-include_directories(include)
-
-# Source files
-set(SOURCES
-    src/openafis.cpp
-)
-
-# Create shared library
-add_library(openafis SHARED ${SOURCES})
-
-# Set library properties
-set_target_properties(openafis PROPERTIES
-    VERSION ${PROJECT_VERSION}
-    SOVERSION 1
-    PUBLIC_HEADER include/OpenAFIS.h
-)
-
-# Install targets
-install(TARGETS openafis
-    LIBRARY DESTINATION lib
-    PUBLIC_HEADER DESTINATION include
-)
-EOF
-    
-    # Create header file
-    cat > "$source_dir/include/OpenAFIS.h" << 'EOF'
-#ifndef OPENAFIS_H
-#define OPENAFIS_H
-
-// Mock OpenAFIS Library Header
-// This is a development placeholder for OpenAFIS integration
-
-#include <cstdint>
-#include <vector>
-#include <string>
-#include <memory>
-
-namespace openafis {
-
-// Forward declarations
-class FingerprintTemplate;
-class Matcher;
-
-// Fingerprint template class
-class FingerprintTemplate {
-public:
-    FingerprintTemplate();
-    ~FingerprintTemplate();
-    
-    bool loadFromFile(const std::string& filename);
-    bool loadFromData(const uint8_t* data, size_t length);
-    bool isValid() const;
-    std::string getId() const;
-    void setId(const std::string& id);
-    
-private:
-    class Impl;
-    std::unique_ptr<Impl> pImpl;
-};
-
-// Match result structure
-struct MatchResult {
-    float similarity_score;
-    std::string template_id;
-    bool is_match;
-    int processing_time_ms;
-    
-    MatchResult() : similarity_score(0.0f), template_id(""), is_match(false), processing_time_ms(0) {}
-};
-
-// Fingerprint matcher class
-class Matcher {
-public:
-    Matcher();
-    ~Matcher();
-    
-    void setSimilarityThreshold(float threshold);
-    float getSimilarityThreshold() const;
-    
-    MatchResult match(const FingerprintTemplate& probe, const FingerprintTemplate& candidate);
-    std::vector<MatchResult> searchDatabase(const FingerprintTemplate& probe, 
-                                          const std::vector<FingerprintTemplate>& database);
-    
-private:
-    class Impl;
-    std::unique_ptr<Impl> pImpl;
-};
-
-// Utility functions
-bool initializeLibrary();
-void shutdownLibrary();
-std::string getVersion();
-
-} // namespace openafis
-
-#endif // OPENAFIS_H
-EOF
-    
-    # Create source file
-    cat > "$source_dir/src/openafis.cpp" << 'EOF'
-#include "OpenAFIS.h"
-#include <iostream>
-#include <random>
-#include <chrono>
-#include <algorithm>
-
-namespace openafis {
-
-// FingerprintTemplate::Impl
-class FingerprintTemplate::Impl {
-public:
-    std::vector<uint8_t> data;
-    std::string id;
-    bool valid = false;
-};
-
-// FingerprintTemplate implementation
-FingerprintTemplate::FingerprintTemplate() : pImpl(std::make_unique<Impl>()) {}
-
-FingerprintTemplate::~FingerprintTemplate() = default;
-
-bool FingerprintTemplate::loadFromFile(const std::string& filename) {
-    // Mock implementation - just simulate loading
-    pImpl->valid = true;
-    pImpl->id = filename;
-    pImpl->data.resize(1024); // Mock data
-    std::fill(pImpl->data.begin(), pImpl->data.end(), 0xAB);
-    return true;
-}
-
-bool FingerprintTemplate::loadFromData(const uint8_t* data, size_t length) {
-    if (!data || length == 0) return false;
-    
-    pImpl->data.assign(data, data + length);
-    pImpl->valid = true;
-    return true;
-}
-
-bool FingerprintTemplate::isValid() const {
-    return pImpl->valid;
-}
-
-std::string FingerprintTemplate::getId() const {
-    return pImpl->id;
-}
-
-void FingerprintTemplate::setId(const std::string& id) {
-    pImpl->id = id;
-}
-
-// Matcher::Impl
-class Matcher::Impl {
-public:
-    float threshold = 0.4f;
-    std::mt19937 rng{std::random_device{}()};
-};
-
-// Matcher implementation
-Matcher::Matcher() : pImpl(std::make_unique<Impl>()) {}
-
-Matcher::~Matcher() = default;
-
-void Matcher::setSimilarityThreshold(float threshold) {
-    pImpl->threshold = std::clamp(threshold, 0.0f, 1.0f);
-}
-
-float Matcher::getSimilarityThreshold() const {
-    return pImpl->threshold;
-}
-
-MatchResult Matcher::match(const FingerprintTemplate& probe, const FingerprintTemplate& candidate) {
-    auto start = std::chrono::high_resolution_clock::now();
-    
-    MatchResult result;
-    result.template_id = candidate.getId();
-    
-    if (!probe.isValid() || !candidate.isValid()) {
-        result.similarity_score = 0.0f;
-        result.is_match = false;
-    } else {
-        // Mock matching - generate random similarity score
-        std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-        result.similarity_score = dist(pImpl->rng);
-        result.is_match = result.similarity_score >= pImpl->threshold;
-    }
-    
-    auto end = std::chrono::high_resolution_clock::now();
-    result.processing_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    
-    return result;
-}
-
-std::vector<MatchResult> Matcher::searchDatabase(const FingerprintTemplate& probe, 
-                                                const std::vector<FingerprintTemplate>& database) {
-    std::vector<MatchResult> results;
-    results.reserve(database.size());
-    
-    for (const auto& candidate : database) {
-        results.push_back(match(probe, candidate));
-    }
-    
-    // Sort by similarity score (highest first)
-    std::sort(results.begin(), results.end(), 
-              [](const MatchResult& a, const MatchResult& b) {
-                  return a.similarity_score > b.similarity_score;
-              });
-    
-    return results;
-}
-
-// Utility functions
-bool initializeLibrary() {
-    std::cout << "Mock OpenAFIS library initialized" << std::endl;
-    return true;
-}
-
-void shutdownLibrary() {
-    std::cout << "Mock OpenAFIS library shutdown" << std::endl;
-}
-
-std::string getVersion() {
-    return "1.0.0-mock";
-}
-
-} // namespace openafis
-EOF
-    
-    print_success "Mock OpenAFIS implementation created"
 }
 
 # Function to build OpenAFIS
@@ -416,16 +161,45 @@ build_openafis() {
     
     cd "$source_dir"
     
-    # Build using the OpenAFIS recommended method with -fPIC for Node.js addon compatibility
-    print_status "Configuring and building with CMake (with -fPIC for Node.js compatibility)..."
-    cmake . -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_CXX_FLAGS="-fPIC" \
-            -DCMAKE_C_FLAGS="-fPIC" \
-            -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+    # Fix common compilation issues
+    print_status "Applying fixes for compilation issues..."
     
-    # Build
+    # Fix missing cstddef include in Minutia.h
+    if [ -f "lib/Minutia.h" ]; then
+        if ! grep -q "#include <cstddef>" lib/Minutia.h; then
+            sed -i '6a#include <cstddef>' lib/Minutia.h
+            print_status "Added missing #include <cstddef> to Minutia.h"
+        fi
+    fi
+    
+    # Fix missing algorithm include if needed
+    find . -name "*.h" -o -name "*.cpp" | xargs grep -l "std::sort\|std::find\|std::max\|std::min" | while read file; do
+        if ! grep -q "#include <algorithm>" "$file"; then
+            sed -i '1i#include <algorithm>' "$file"
+            print_status "Added missing #include <algorithm> to $file"
+        fi
+    done
+    
+    # Create build directory and configure with CMake
+    print_status "Configuring OpenAFIS with CMake..."
+    mkdir -p build
+    cd build
+    
+    cmake .. -DCMAKE_BUILD_TYPE=Release \
+             -DCMAKE_CXX_FLAGS="-fPIC" \
+             -DCMAKE_C_FLAGS="-fPIC" \
+             -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+    
+    # Build using CMake
     print_status "Compiling OpenAFIS (using $cpu_cores cores)..."
-    make -j"$cpu_cores"
+    if ! cmake --build . --parallel "$cpu_cores"; then
+        print_error "OpenAFIS compilation failed"
+        print_status "Trying with verbose output..."
+        cmake --build . --parallel "$cpu_cores" --verbose || {
+            print_error "OpenAFIS compilation failed with verbose output"
+            exit 1
+        }
+    fi
     
     print_success "OpenAFIS built successfully"
 }
@@ -438,41 +212,53 @@ install_openafis() {
     
     cd "$source_dir"
     
-    # OpenAFIS doesn't have a traditional install target
-    # Instead, we need to manually copy the necessary files
-    print_status "Copying OpenAFIS library files..."
+    # OpenAFIS builds into the build directory
+    print_status "Installing OpenAFIS library files..."
     
     # Create include directory if it doesn't exist
     sudo mkdir -p /usr/local/include/openafis
     sudo mkdir -p /usr/local/lib
     
-    # Copy header files - copy all headers from lib directory
-    if [ -d "lib" ] && [ -f "lib/OpenAFIS.h" ]; then
+    # Copy header files from lib directory
+    if [ -d "lib" ]; then
         sudo cp lib/*.h /usr/local/include/openafis/
-        print_success "All header files copied from lib directory"
+        print_success "Header files copied from lib directory"
     else
-        print_warning "OpenAFIS.h not found in expected location"
-        # Look for header files in common locations
-        find . -name "*.h" -o -name "*.hpp" | grep -E "(OpenAFIS|openafis)" | head -5
+        print_warning "lib directory not found"
     fi
     
-    # Copy library files (look for built libraries)
-    if [ -f "lib/libopenafis.a" ]; then
-        sudo cp lib/libopenafis.a /usr/local/lib/
-        print_success "Static library copied"
-    elif [ -f "libopenafis.a" ]; then
-        sudo cp libopenafis.a /usr/local/lib/
-        print_success "Static library copied"
-    elif [ -f "lib/libopenafis.so" ]; then
-        sudo cp lib/libopenafis.so /usr/local/lib/
-        print_success "Shared library copied"
-    elif [ -f "libopenafis.so" ]; then
-        sudo cp libopenafis.so /usr/local/lib/
-        print_success "Shared library copied"
+    # Copy built library files from build directory
+    if [ -d "build" ]; then
+        cd build
+        
+        # Look for built libraries
+        if [ -f "lib/libopenafis.a" ]; then
+            sudo cp lib/libopenafis.a /usr/local/lib/
+            print_success "Static library copied"
+        elif [ -f "lib/libopenafis.so" ]; then
+            sudo cp lib/libopenafis.so /usr/local/lib/
+            print_success "Shared library copied"
+        elif [ -f "libopenafis.a" ]; then
+            sudo cp libopenafis.a /usr/local/lib/
+            print_success "Static library copied"
+        elif [ -f "libopenafis.so" ]; then
+            sudo cp libopenafis.so /usr/local/lib/
+            print_success "Shared library copied"
+        else
+            print_warning "No OpenAFIS library files found in build directory"
+            print_status "Available files in build directory:"
+            find . -name "*.so" -o -name "*.a" | head -10
+        fi
+        
+        # Also copy any executables that might be useful
+        if [ -f "cli/openafis" ]; then
+            sudo cp cli/openafis /usr/local/bin/
+            print_success "OpenAFIS CLI tool installed"
+        fi
+        
     else
-        print_warning "No OpenAFIS library files found. This might be expected if OpenAFIS is header-only."
-        print_status "Available files in build directory:"
-        find . -name "*.so" -o -name "*.a" | head -10
+        print_error "Build directory not found"
+        exit 1
     fi
     
     # Update library cache
@@ -530,58 +316,6 @@ EOF
         
         rm -f "$test_file"
     fi
-}
-
-# Function to create OpenAFIS.h header file (placeholder)
-create_placeholder_header() {
-    local header_dir="/usr/local/include"
-    local header_file="$header_dir/OpenAFIS.h"
-    
-    print_status "Creating placeholder OpenAFIS.h header..."
-    
-    sudo mkdir -p "$header_dir"
-    
-    sudo tee "$header_file" > /dev/null << 'EOF'
-#ifndef OPENAFIS_H
-#define OPENAFIS_H
-
-// OpenAFIS Library Header
-// This is a placeholder header file for OpenAFIS integration
-// Replace this with the actual OpenAFIS header file when available
-
-#include <cstdint>
-#include <vector>
-#include <string>
-
-namespace openafis {
-
-// Placeholder structures and functions
-// These should be replaced with actual OpenAFIS API
-
-struct Template {
-    std::vector<uint8_t> data;
-    std::string id;
-};
-
-struct MatchResult {
-    float score;
-    std::string template_id;
-    bool is_match;
-};
-
-// Placeholder function declarations
-// Replace with actual OpenAFIS API functions
-bool loadTemplate(const std::string& data);
-MatchResult matchTemplates(const Template& probe, const Template& candidate);
-std::vector<MatchResult> searchDatabase(const Template& probe, const std::vector<Template>& database);
-
-} // namespace openafis
-
-#endif // OPENAFIS_H
-EOF
-    
-    print_success "Placeholder OpenAFIS.h created at $header_file"
-    print_warning "This is a placeholder header. Replace it with the actual OpenAFIS header when available."
 }
 
 # Main function
